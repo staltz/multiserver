@@ -44,7 +44,6 @@ module.exports = function (plugs, wrap) {
     //maybe just parse the ones you understand?
     parse: function (str) {
       return str.split(';').map(function (e, i) {
-        console.log(e, i)
         return plugs[i].parse(e)
       })
     }

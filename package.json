@@ -8,13 +8,17 @@
     "url": "git://github.com/dominictarr/multiserver.git"
   },
   "dependencies": {
+    "cuid": "^2.1.0",
     "pull-cat": "~1.1.5",
     "pull-stream": "^3.6.1",
     "pull-ws": "^3.3.0",
     "secret-handshake": "^1.1.12",
     "separator-escape": "0.0.0",
+    "signalhub": "^4.9.0",
+    "simple-peer": "^8.4.0",
     "socks": "1.1.9",
-    "stream-to-pull-stream": "^1.7.2"
+    "stream-to-pull-stream": "^1.7.2",
+    "wrtc": "0.0.66"
   },
   "devDependencies": {
     "chloride": "^2.2.8",
