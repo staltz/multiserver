@@ -9,7 +9,6 @@ var cuid = require('cuid')
 
 module.exports = function (opts) {
   opts = opts || {}
-  opts.binaryType = (opts.binaryType || 'arraybuffer')
 
   var uuid = cuid()
   var sbot = opts.server
