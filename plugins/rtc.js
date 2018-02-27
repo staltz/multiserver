@@ -15,68 +15,11 @@ module.exports = function (opts) {
   var sbot = opts.server
   var serverOnConnect = undefined
 
-  //var hubs = opts.hubs || ['https://signalhub-hzbibrznqa.now.sh']
-  var connectedServerHubs = []
   var connectedServerPeers = []
+  var connectedServerHubs = []
   var connectedClientHubs = []
 
   sbot.on("RTC_HUB_ADDED", CreateServerPeer)
-
-  function closeServer(){
-    connectedServerHubs
-      .filter(hub => !hub.closed)
-      .forEach(hub => hub.close())
-
-    connectedClientHubs
-      .filter(hub => !hub.closed)
-      .forEach(hub => hub.close())
-
-    connectedServerPeers
-      .forEach(peer => peer.destroy())
-  }
-
-  function CreateServerPeer(hubAddress) {
-
-    if(!serverOnConnect)
-      return
-
-    var hub = Hub(hubAddress)
-    connectedServerHubs.push(hub)
-
-    var server = new SimplePeer({ wrtc })
-    server.uuid = uuid 
-    connectedServerPeers.push(server)
-
-    hub.subscribe('signal')
-      .on('data', function(data) {
-        if(data.from !== server.uuid && data.initiator){
-          server.signal(data.data)
-        }
-      })
-
-    server.on('signal', function(data) {
-      var wrapped = Object.assign({}, {from: server.uuid}, {data})
-      hub.subscribe(server.uuid)
-        .on('data', function(data) {
-          server.signal(data) 
-        })
-      hub.broadcast('signal', wrapped)
-    })
-
-    server.on('connect', function() {
-      console.log('RTC server connected to an incoming peer');
-      var stream = toPull.duplex(server)
-      stream.address = 'rtc:'+server.remoteAddress+':'+server.remotePort
-      serverOnConnect(stream)
-      hubUrl = hub.urls[0] //assumes hubs only have one url
-      hub.close()
-      hub = Hub(hubUrl)
-
-      CreateServerPeer(hubAddress)
-    })
-
-
-  }
 
   return {
     name: 'rtc',
@@ -143,6 +86,66 @@ module.exports = function (opts) {
       return addr
     }
   }
+
+
+  function CreateServerPeer(hubAddress) {
+
+    if(!serverOnConnect)
+      return
+
+    var hub = Hub(hubAddress)
+    connectedServerHubs.push(hub)
+
+    var server = new SimplePeer({ wrtc })
+    server.uuid = uuid 
+    connectedServerPeers.push(server)
+
+    hub.subscribe('signal')
+      .on('data', function(data) {
+        if(data.from !== server.uuid && data.initiator){
+          server.signal(data.data)
+        }
+      })
+
+    server.on('signal', function(data) {
+      var wrapped = Object.assign({}, {from: server.uuid}, {data})
+      hub.subscribe(server.uuid)
+        .on('data', function(data) {
+          server.signal(data) 
+        })
+      hub.broadcast('signal', wrapped)
+    })
+
+    server.on('connect', function() {
+      console.log('RTC server connected to an incoming peer');
+      var stream = toPull.duplex(server)
+      stream.onEnd(()=>{
+        server.destroy()
+      })
+
+      stream.address = 'rtc:'+server.remoteAddress+':'+server.remotePort
+      serverOnConnect(stream)
+      hubUrl = hub.urls[0] //assumes hubs only have one url
+      hub.close()
+      hub = Hub(hubUrl)
+
+      CreateServerPeer(hubAddress)
+    })
+  }
+
+  function closeServer(){
+    connectedServerHubs
+      .filter(hub => !hub.closed)
+      .forEach(hub => hub.close())
+
+    connectedClientHubs
+      .filter(hub => !hub.closed)
+      .forEach(hub => hub.close())
+
+    connectedServerPeers
+      .forEach(peer => peer.destroy())
+  }
+
 }
 
 function Hub(hub){
