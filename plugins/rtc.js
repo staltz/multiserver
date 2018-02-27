@@ -48,11 +48,11 @@ module.exports = function (opts) {
             client.signal(data) 
           })
 
-        hub.broadcast('signal', wrapped)// 1
+        hub.broadcast('signal', wrapped)
       })
 
       client.on('connect', function() {
-        console.log('client connected to a remote peer');
+        console.log('RTC client connected to a remote peer');
         var stream = toPull.duplex(client)
         stream.address = 'rtc:'+client.remoteAddress+':'+client.remotePort
         hub.close()
