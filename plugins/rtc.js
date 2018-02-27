@@ -16,8 +16,7 @@ module.exports = function (opts) {
   var serverOnConnect = undefined
 
   var connectedServerPeers = []
-  var connectedServerHubs = []
-  var connectedClientHubs = []
+  var connectedHubs = []
 
   sbot.on("RTC_HUB_ADDED", CreateServerPeer)
 
@@ -30,7 +29,7 @@ module.exports = function (opts) {
     },
     client: function (addr, cb) {
       var hub = Hub(addr.hostname)
-      connectedClientHubs.push(hub)
+      connectedHubs.push(hub)
       var client = new SimplePeer({ wrtc, initiator: true })
       client.uuid = uuid
 
@@ -94,7 +93,7 @@ module.exports = function (opts) {
       return
 
     var hub = Hub(hubAddress)
-    connectedServerHubs.push(hub)
+    connectedHubs.push(hub)
 
     var server = new SimplePeer({ wrtc })
     server.uuid = uuid 
@@ -119,9 +118,6 @@ module.exports = function (opts) {
     server.on('connect', function() {
       console.log('RTC server connected to an incoming peer');
       var stream = toPull.duplex(server)
-      stream.onEnd(()=>{
-        server.destroy()
-      })
 
       stream.address = 'rtc:'+server.remoteAddress+':'+server.remotePort
       serverOnConnect(stream)
@@ -134,11 +130,7 @@ module.exports = function (opts) {
   }
 
   function closeServer(){
-    connectedServerHubs
-      .filter(hub => !hub.closed)
-      .forEach(hub => hub.close())
-
-    connectedClientHubs
+    connectedHubs
       .filter(hub => !hub.closed)
       .forEach(hub => hub.close())
 
