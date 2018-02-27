@@ -1,7 +1,5 @@
 var URL = require('url')
-var pull = require('pull-stream/pull')
 var toPull = require('stream-to-pull-stream')
-var Map = require('pull-stream/throughs/map')
 var SignalHub = require('signalhub')
 var SimplePeer = require('simple-peer')
 var wrtc = require('wrtc')
