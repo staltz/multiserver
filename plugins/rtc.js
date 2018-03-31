@@ -15,12 +15,13 @@ module.exports = function (opts) {
   var connectedServerPeers = []
   var connectedHubs = []
 
-  sbot.on("RTC_HUB_ADDED", CreateServerPeer)
+  sbot.on('RTC_HUB_ADDED', data => CreateServerPeer(data, opts))
 
   return {
     name: 'rtc',
     server: function (onConnect) {
       serverOnConnect = onConnect
+      console.log(onConnect)
 
       return closeServer
     },
@@ -31,102 +32,100 @@ module.exports = function (opts) {
       client.uuid = uuid
 
       hub.subscribe('signal')
-        .on('data', function(data) {
-          if(data.from !== client.uuid && !data.initiator)
-            client.signal(data.data)
+        .on('data', function (data) {
+          if (data.from !== client.uuid && !data.initiator) { client.signal(data.data) }
         })
 
-      client.on('signal', function(data) {
+      client.on('signal', function (data) {
         var wrapped = Object.assign({}, {from: client.uuid, initiator: true}, {data})
 
         hub.subscribe(client.uuid)
-          .on('data', function(data) {
-            client.signal(data) 
+          .on('data', function (data) {
+            client.signal(data)
           })
 
         hub.broadcast('signal', wrapped)
       })
 
-      client.on('connect', function() {
-        console.log('RTC client connected to a remote peer');
+      client.on('connect', function () {
+        console.log('RTC client connected to a remote peer')
         var stream = toPull.duplex(client)
-        stream.address = 'rtc:'+client.remoteAddress+':'+client.remotePort
+        stream.address = 'rtc:' + client.remoteAddress + ':' + client.remotePort
         hub.close()
         cb(null, stream)
       })
 
       return () => {
-        server.destroy() 
+        // server.destroy()
         hub.close()
         cb(new Error('multiserver.rtc: aborted'))
       }
     },
     stringify: function () {
       var port
-      if(opts.server)
-        port = opts.server.address().port
-      else
-        port = opts.port
+      // if (opts.server) { port = opts.server.address().port } else { port = opts.port }
 
-      //TODO: ports?
+      // TODO: ports?
       return URL.format({
         protocol: 'rtc',
         slashes: true,
-        hostname: opts.host || 'localhost', //detect ip address
+        hostname: opts.host || 'localhost', // detect ip address
         port: port || 3483
       })
     },
     parse: function (str) {
       var addr = URL.parse(str)
-      if(!/^rtc?\:$/.test(addr.protocol)) return null
+      if (!/^rtc?\:$/.test(addr.protocol)) return null
       return addr
     }
   }
 
-
-  function CreateServerPeer(hubAddress) {
-
-    if(!serverOnConnect)
-      return
+  function CreateServerPeer (hubAddress, opts) {
+    if (!serverOnConnect) { return }
 
     var hub = Hub(hubAddress)
     connectedHubs.push(hub)
 
     var server = new SimplePeer({ wrtc })
-    server.uuid = uuid 
+    server.uuid = uuid
     connectedServerPeers.push(server)
 
     hub.subscribe('signal')
-      .on('data', function(data) {
-        if(data.from !== server.uuid && data.initiator){
+      .on('data', function (data) {
+        if (data.from !== server.uuid && data.initiator) {
           server.signal(data.data)
         }
       })
 
-    server.on('signal', function(data) {
+    server.on('signal', function (data) {
       var wrapped = Object.assign({}, {from: server.uuid}, {data})
       hub.subscribe(server.uuid)
-        .on('data', function(data) {
-          server.signal(data) 
+        .on('data', function (data) {
+          server.signal(data)
         })
       hub.broadcast('signal', wrapped)
     })
 
-    server.on('connect', function() {
-      console.log('RTC server connected to an incoming peer');
+    server.on('connect', function () {
       var stream = toPull.duplex(server)
+      var hubUrl = hub.urls[0] // assumes hubs only have one url
 
-      stream.address = 'rtc:'+server.remoteAddress+':'+server.remotePort
+      stream.address = 'rtc:' + server.remoteAddress + ':' + server.remotePort
+      stream.protocol = 'rtc'
+      stream.hub = URL.parse(hubUrl).hostname //this is yuck. Because of multiserver address pattern we need to prune off https. This is one place to do it but a bit fragile
+
       serverOnConnect(stream)
-      hubUrl = hub.urls[0] //assumes hubs only have one url
       hub.close()
       hub = Hub(hubUrl)
 
-      CreateServerPeer(hubAddress)
+      //avoid stack overflow
+      setTimeout(() => {
+        CreateServerPeer(hubAddress, opts)
+      }, 1)
     })
   }
 
-  function closeServer(){
+  function closeServer () {
     connectedHubs
       .filter(hub => !hub.closed)
       .forEach(hub => hub.close())
@@ -134,11 +133,8 @@ module.exports = function (opts) {
     connectedServerPeers
       .forEach(peer => peer.destroy())
   }
-
 }
 
-function Hub(hub){
+function Hub (hub) {
   return SignalHub('sbot-rtc', 'https://' + hub)
 }
-
-

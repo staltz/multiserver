@@ -76,10 +76,14 @@ module.exports = function (ary, wrap) {
         console.error(err.stack)
       }
       return proto.server(function (stream) {
+        var hub = stream.hub || ''
         compose(
           wrap(stream),
-          trans.map(function (tr) { return tr.create() }),
+          trans.map(function (tr) { 
+            return tr.create() 
+          }),
           function (err, stream) {
+            stream.hub = hub
             if(err) onError(err)
             else onConnection(stream)
           }
