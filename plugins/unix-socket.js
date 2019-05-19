@@ -62,6 +62,7 @@ module.exports = function (opts) {
       }
     },
     client: function (opts, cb) {
+      console.log(opts)
       debug('unix socket client')
       var started = false
       var stream = net.connect(opts.path)
