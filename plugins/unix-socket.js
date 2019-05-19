@@ -89,6 +89,7 @@ module.exports = function (opts) {
     },
     //MUST be unix:socket_path
     parse: function (s) {
+      console.log('parsing', s)
       var ary = s.split(':')
       if(ary.length < 2) return null
       if('unix' !== ary.shift()) return null
