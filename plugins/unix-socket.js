@@ -89,13 +89,17 @@ module.exports = function (opts) {
     },
     //MUST be unix:socket_path
     parse: function (s) {
-      console.log('parsing', s)
       var ary = s.split(':')
+
+      // Immediately return if there's no path.
       if(ary.length < 2) return null
+
+      // Immediately return if the first item isn't 'unix'.
       if('unix' !== ary.shift()) return null
+
       return {
         name: '',
-        path: ary.shift()
+        path: ary.join(':')
       }
     },
     stringify: function (_scope) {
