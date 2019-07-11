@@ -1,11 +1,11 @@
 {
-  "name": "multiserver",
+  "name": "staltz-multiserver",
   "description": "write a server which works over many protocols at once, or connect to the same",
   "version": "3.4.0",
-  "homepage": "https://github.com/dominictarr/multiserver",
+  "homepage": "https://github.com/staltz/multiserver",
   "repository": {
     "type": "git",
-    "url": "git://github.com/dominictarr/multiserver.git"
+    "url": "git://github.com/staltz/multiserver.git"
   },
   "dependencies": {
     "debug": "^4.1.1",
